@@ -24,6 +24,12 @@ steps:
   inputs:
     versionSpec: '$(python.version)'
   displayName: 'Use Python $(python.version)'
+- task: PythonScript@0
+  inputs:
+    scriptSource: 'inline'
+    script: |
+      print('Hello world 1')
+      print('Hello world 2')
 
 - script: |
     python -m pip install --upgrade pip
@@ -34,9 +40,20 @@ steps:
     pip install pytest pytest-azurepipelines
     pytest
   displayName: 'pytest'
-- task: PublishCodeCoverageResults@1
+
+- script: |
+    pip install pytest
+    pip install pytest-cov
+    pytest tests --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+  displayName: 'Test with pytest'
+
+- script: |
+    python -m pip install flake8
+    flake8 .
+  displayName: 'Run lint tests'
+- task: PublishTestResults@2
+  condition: succeededOrFailed()
   inputs:
-    codeCoverageTool: 'JaCoCo'
-    summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/site/jacoco/jacoco.xml'
-    reportDirectory: '$(System.DefaultWorkingDirectory)/**/site/jacoco'
-    failIfCoverageEmpty: true
+    testResultsFiles: '**/test-*.xml'
+    testRunTitle: 'Publish test results for Python $(python.version)'
+
